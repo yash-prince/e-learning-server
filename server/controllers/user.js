@@ -66,7 +66,6 @@ export const verifyUser = TryCatch(async (req, res) => {
   }
   
   
-
   await User.create({
     name:verify.user.name,
     email: verify.user.email,
@@ -104,6 +103,63 @@ res.json({
   user,
 })
 });
+
+export const forgotPassword = TryCatch(async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (!user)
+    return res.status(400).json({ message: "No user with this email" });
+
+  // Generate a 6‑digit OTP
+  const otp = Math.floor(Math.random() * 1000000);
+  // Sign only user ID + OTP
+  const resetToken = jwt.sign(
+    { sub: user._id, otp },
+    process.env.RESET_PASSWORD_SECRET,
+    { expiresIn: "15m" }
+  );
+
+  // Email the OTP to the user
+  await sendMail(email, "Password Reset OTP", { otp });
+
+  res.status(200).json({
+    message: "OTP sent to your email",
+    resetToken,                   // Client stores this temporarily
+  });
+});
+
+export const resetPassword = TryCatch(async (req, res) => {
+  const { resetToken, otp, newPassword } = req.body;
+  let payload;
+
+  try {
+    payload = jwt.verify(resetToken, process.env.RESET_PASSWORD_SECRET);
+  } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      return res.status(400).json({ message: "OTP has expired" });
+    }
+    return res.status(400).json({ message: "Invalid reset token" });
+  }
+
+  // Check OTP
+  if (payload.otp !== Number(otp)) {
+    return res.status(400).json({ message: "Wrong OTP" });
+  }
+
+  // Find the user
+  const user = await User.findById(payload.sub);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  // Hash and update password
+  const hashed = await bcrypt.hash(newPassword, 10);
+  user.password = hashed;
+  await user.save();
+
+  res.status(200).json({ message: "Password reset successful" });
+});
+
 
 export const myProfile = TryCatch(async(req, res) => {
   const user = await User.findById(req.user._id)
