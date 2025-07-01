@@ -45,6 +45,7 @@ A MERN‑stack e‑learning platform with user authentication, course management
   cd server
   npm install
   cd ..
+
 # now you’re back at /e‑learning and can run:
 4. **Install frontend dependencies**
    ```bash
