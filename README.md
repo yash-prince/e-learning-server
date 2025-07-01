@@ -5,11 +5,11 @@
 
 ### 1. Clone the repo
 ```bash
-git clone https://github.com/yash-prince/e-learning.git
+git clone https://github.com/yash-prince/e-learning-server.git
 ```
 
 ```bash
-cd e-learning
+cd e-learning-server
 ```
 
 ### 2. Create your own .env file
